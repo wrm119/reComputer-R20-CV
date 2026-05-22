@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(hailortcli fw-control *)",
+      "Bash(wsl -- bash -c 'cd /mnt/d/reComputer-R20-CV-main &&   sed -i '\\\\''s|ghcr.io/wrm119/yolo8_hailo:latest|ghcr.io/wrm119/recomputer-r20-cv:latest|g'\\\\'' README.md README_zh.md &&   sed -i '\\\\''s|https://github.com/wrm119/yolo8_hailo.git|https://github.com/wrm119/reComputer-R20-CV.git|g'\\\\'' README.md README_zh.md &&   sed -i '\\\\''s|cd yolo8_hailo/src/rpi5_hailo8_yolov8|cd reComputer-R20-CV/src/rpi5_hailo8_yolov8|g'\\\\'' README.md README_zh.md &&   echo '\\\\''===VERIFY==='\\\\'' && grep -n '\\\\''ghcr.io\\\\|yolo8_hailo\\\\|reComputer-R20-CV.git'\\\\'' README.md README_zh.md')"
+    ]
+  }
+}
