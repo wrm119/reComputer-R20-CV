@@ -52,7 +52,7 @@ sudo docker run --rm --privileged --net=host \
     --device /dev/hailo0:/dev/hailo0 \
     -v /usr/lib/libhailort.so.4.23.0:/usr/lib/libhailort.so.4.23.0:ro \
     -v /usr/lib/libhailort.so:/usr/lib/libhailort.so:ro \
-    ghcr.io/wrm119/recomputer-r20-cv:latest
+    ghcr.io/wrm119/r20-hailo8-yolov8:latest
 ```
 
 Docker will pull the image on first run (~1.8 GB). The container then loops the
@@ -74,7 +74,7 @@ sudo docker run --rm --privileged --net=host \
     --device /dev/video0:/dev/video0 \
     -v /usr/lib/libhailort.so.4.23.0:/usr/lib/libhailort.so.4.23.0:ro \
     -v /usr/lib/libhailort.so:/usr/lib/libhailort.so:ro \
-    ghcr.io/wrm119/recomputer-r20-cv:latest \
+    ghcr.io/wrm119/r20-hailo8-yolov8:latest \
     python web_detection.py --model_path model/yolov8n.hef --camera_id 0
 ```
 
@@ -85,8 +85,16 @@ sudo docker run --rm --privileged --net=host \
 ```text
 reComputer-R20-CV/
 ├── docker/hailo8/
-│   └── yolov8.dockerfile           # Image: python:3.11-slim arm64 + ffmpeg + HailoRT wheel
-└── src/rpi5_hailo8_yolov8/
+│   ├── yolov8.dockerfile           # Image: python:3.11-slim arm64 + ffmpeg + HailoRT wheel (yolov8n default)
+│   ├── yolov5.dockerfile           # Same base, yolov5s default
+│   └── yolov11.dockerfile          # Same base, yolov11n default
+└── src/
+    ├── rpi5_hailo8_yolov8/         # Reference module — validated end-to-end (see TEST_REPORT.md)
+    ├── rpi5_hailo8_yolov5/         # Sibling module, same pipeline with yolov5 .hef weights
+    └── rpi5_hailo8_yolov11/        # Sibling module, same pipeline with yolov11 .hef weights
+
+# Per-module layout (same for all three):
+src/rpi5_hailo8_yolovN/
     ├── web_detection.py            # FastAPI + inference/encode threading pipeline
     ├── py_utils/
     │   ├── hailo_executor.py       # HailoRT wrapper, long-lived InferVStreams
@@ -96,7 +104,7 @@ reComputer-R20-CV/
     ├── video/test.mp4              # Bundled demo source
     ├── requirements.txt
     ├── README.md / README_zh.md    # Module deep dive: deployment, CLI, troubleshooting
-    └── TEST_REPORT.md              # V1→V2 perf analysis, validation log
+    └── TEST_REPORT.md              # Validation log (v8 has full report; v5/v11 are stubs)
 ```
 
 ---
@@ -223,7 +231,13 @@ Walkthrough:
 
 ## Documentation
 
-- [src/rpi5_hailo8_yolov8/README.md](src/rpi5_hailo8_yolov8/README.md) — module-level
-  deployment, CLI arguments, troubleshooting (English)
-- [src/rpi5_hailo8_yolov8/README_zh.md](src/rpi5_hailo8_yolov8/README_zh.md) — 同上中文版
-- [src/rpi5_hailo8_yolov8/TEST_REPORT.md](src/rpi5_hailo8_yolov8/TEST_REPORT.md) — V1→V2 performance analysis, end-to-end validation log
+Per-module deep dives (deployment, CLI arguments, troubleshooting):
+
+- [src/rpi5_hailo8_yolov8/README.md](src/rpi5_hailo8_yolov8/README.md) — YOLOv8 (English) / [README_zh.md](src/rpi5_hailo8_yolov8/README_zh.md)
+- [src/rpi5_hailo8_yolov5/README.md](src/rpi5_hailo8_yolov5/README.md) — YOLOv5 (English) / [README_zh.md](src/rpi5_hailo8_yolov5/README_zh.md)
+- [src/rpi5_hailo8_yolov11/README.md](src/rpi5_hailo8_yolov11/README.md) — YOLOv11 (English) / [README_zh.md](src/rpi5_hailo8_yolov11/README_zh.md)
+
+Validation:
+
+- [src/rpi5_hailo8_yolov8/TEST_REPORT.md](src/rpi5_hailo8_yolov8/TEST_REPORT.md) — full end-to-end validation log + V1→V2 performance analysis
+- v5 / v11 modules ship stub TEST_REPORTs — fill in after running the validation checklist on actual hardware

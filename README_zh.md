@@ -49,7 +49,7 @@ sudo docker run --rm --privileged --net=host \
     --device /dev/hailo0:/dev/hailo0 \
     -v /usr/lib/libhailort.so.4.23.0:/usr/lib/libhailort.so.4.23.0:ro \
     -v /usr/lib/libhailort.so:/usr/lib/libhailort.so:ro \
-    ghcr.io/wrm119/recomputer-r20-cv:latest
+    ghcr.io/wrm119/r20-hailo8-yolov8:latest
 ```
 
 首次运行 Docker 会自动拉取镜像（约 1.8 GB）。之后容器会循环播放内置的
@@ -70,7 +70,7 @@ sudo docker run --rm --privileged --net=host \
     --device /dev/video0:/dev/video0 \
     -v /usr/lib/libhailort.so.4.23.0:/usr/lib/libhailort.so.4.23.0:ro \
     -v /usr/lib/libhailort.so:/usr/lib/libhailort.so:ro \
-    ghcr.io/wrm119/recomputer-r20-cv:latest \
+    ghcr.io/wrm119/r20-hailo8-yolov8:latest \
     python web_detection.py --model_path model/yolov8n.hef --camera_id 0
 ```
 
@@ -81,8 +81,16 @@ sudo docker run --rm --privileged --net=host \
 ```text
 reComputer-R20-CV/
 ├── docker/hailo8/
-│   └── yolov8.dockerfile           # 镜像: python:3.11-slim arm64 + ffmpeg + HailoRT wheel
-└── src/rpi5_hailo8_yolov8/
+│   ├── yolov8.dockerfile           # 镜像: python:3.11-slim arm64 + ffmpeg + HailoRT wheel（默认 yolov8n）
+│   ├── yolov5.dockerfile           # 同基础镜像，默认 yolov5s
+│   └── yolov11.dockerfile          # 同基础镜像，默认 yolov11n
+└── src/
+    ├── rpi5_hailo8_yolov8/         # 参考模块——已端到端验证（详见 TEST_REPORT.md）
+    ├── rpi5_hailo8_yolov5/         # 兄弟模块，同一套流水线 + yolov5 .hef 权重
+    └── rpi5_hailo8_yolov11/        # 兄弟模块，同一套流水线 + yolov11 .hef 权重
+
+# 各模块内部布局一致：
+src/rpi5_hailo8_yolovN/
     ├── web_detection.py            # FastAPI + 推理/编码线程化流水线
     ├── py_utils/
     │   ├── hailo_executor.py       # HailoRT 封装，长生命周期 InferVStreams
@@ -92,7 +100,7 @@ reComputer-R20-CV/
     ├── video/test.mp4              # 内置示例视频
     ├── requirements.txt
     ├── README.md / README_zh.md    # 模块详细文档：部署、命令行参数、故障排查
-    └── TEST_REPORT.md              # V1→V2 性能分析与验证日志
+    └── TEST_REPORT.md              # 验证日志（v8 为完整版，v5/v11 为占位）
 ```
 
 ---
@@ -218,8 +226,13 @@ curl -X POST http://<Pi5_IP>:8000/api/config \
 
 ## 详细文档
 
-- [src/rpi5_hailo8_yolov8/README_zh.md](src/rpi5_hailo8_yolov8/README_zh.md) ——
-  模块级部署、命令行参数、故障排查（中文）
-- [src/rpi5_hailo8_yolov8/README.md](src/rpi5_hailo8_yolov8/README.md) —— 英文版
-- [src/rpi5_hailo8_yolov8/TEST_REPORT.md](src/rpi5_hailo8_yolov8/TEST_REPORT.md) ——
-  V1→V2 性能分析与端到端验证日志
+各模块部署、命令行参数、故障排查：
+
+- [src/rpi5_hailo8_yolov8/README_zh.md](src/rpi5_hailo8_yolov8/README_zh.md) —— YOLOv8（中文）/ [English](src/rpi5_hailo8_yolov8/README.md)
+- [src/rpi5_hailo8_yolov5/README_zh.md](src/rpi5_hailo8_yolov5/README_zh.md) —— YOLOv5（中文）/ [English](src/rpi5_hailo8_yolov5/README.md)
+- [src/rpi5_hailo8_yolov11/README_zh.md](src/rpi5_hailo8_yolov11/README_zh.md) —— YOLOv11（中文）/ [English](src/rpi5_hailo8_yolov11/README.md)
+
+验证报告：
+
+- [src/rpi5_hailo8_yolov8/TEST_REPORT.md](src/rpi5_hailo8_yolov8/TEST_REPORT.md) —— 完整端到端验证日志 + V1→V2 性能分析
+- v5 / v11 仅有占位 TEST_REPORT，待真机跑通验证清单后回填
