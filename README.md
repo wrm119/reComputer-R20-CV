@@ -34,6 +34,22 @@ toolchain on the host.
 
 ### 1. Host prep (one-time, on the Pi)
 
+#### Install Docker
+
+Run the following commands on the development board to install Docker:
+
+```bash
+# Download installation script
+curl -fsSL https://get.docker.com -o get-docker.sh
+# Install using Aliyun mirror source
+sudo sh get-docker.sh --mirror Aliyun
+# Start Docker and enable auto-start on boot
+sudo systemctl enable docker
+sudo systemctl start docker
+```
+
+#### Install Hailo toolchain
+
 ```bash
 sudo apt update
 sudo apt install hailo-all

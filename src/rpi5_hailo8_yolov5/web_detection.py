@@ -442,6 +442,58 @@ class FrameBuffer:
 
 frame_buffer = FrameBuffer()
 
+class LatestFrameReader:
+    """Continuously read a live camera and expose only the newest frame.
+
+    USB/V4L2 camera buffers can queue old frames when inference is slower than
+    capture. A single-threaded read/infer loop then shows stale frames even if
+    the web stream itself has no queue. This reader drains the camera in the
+    background and lets inference always consume the latest available frame.
+    """
+    def __init__(self, cap):
+        self.cap = cap
+        self.frame = None
+        self.version = 0
+        self._last_read_version = 0
+        self._stopped = False
+        self._cond = threading.Condition()
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+
+    def start(self):
+        self._thread.start()
+        return self
+
+    def _loop(self):
+        while not stop_event.is_set():
+            ret, frame = self.cap.read()
+            if not ret:
+                time.sleep(0.01)
+                continue
+            with self._cond:
+                self.frame = frame
+                self.version += 1
+                self._cond.notify_all()
+        with self._cond:
+            self._stopped = True
+            self._cond.notify_all()
+
+    def read(self, timeout=1.0):
+        with self._cond:
+            self._cond.wait_for(
+                lambda: self.version > self._last_read_version or self._stopped,
+                timeout=timeout
+            )
+            if self.frame is None:
+                return False, None
+            self._last_read_version = self.version
+            return True, self.frame.copy()
+
+    def stop(self):
+        with self._cond:
+            self._stopped = True
+            self._cond.notify_all()
+        self._thread.join(timeout=2)
+
 @app.get("/api/video_feed")
 async def video_feed():
     def generate():
@@ -758,6 +810,8 @@ def draw(image, boxes, scores, classes):
                         (top, left - 6), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
 def preprocess_frame(frame, co_helper):
+    if getattr(co_helper, "letter_box_info_list", None) is not None:
+        co_helper.letter_box_info_list.clear()
     img = co_helper.letter_box(im=frame.copy(), new_shape=(IMG_SIZE[1], IMG_SIZE[0]), pad_color=(0,0,0))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img
@@ -892,23 +946,29 @@ def main():
 
     if args.video_path:
         cap = cv2.VideoCapture(args.video_path)
+        capture_source = cap
         is_video_file = True
     else:
         cap = cv2.VideoCapture(args.camera_id)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         # Ask the camera to deliver MJPG so USB bandwidth isn't wasted on raw
         # YUYV. Most modern USB webcams do MJPG natively; if not, V4L2 quietly
         # falls back to YUYV and we just lose this win — no error.
         cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, args.cam_width)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, args.cam_height)
+        capture_source = None
         is_video_file = False
 
     if not cap.isOpened():
         print(f"Error: Cannot open video source (ID: {args.camera_id if not args.video_path else args.video_path})")
         return
 
+    if not is_video_file:
+        capture_source = LatestFrameReader(cap).start()
+
     inf_thread = threading.Thread(target=inference_loop,
-                                  args=(cap, model, co_helper, is_video_file, args.target_fps),
+                                  args=(capture_source, model, co_helper, is_video_file, args.target_fps),
                                   daemon=True)
     enc_thread = threading.Thread(target=encode_loop,
                                   args=(args.preview_width, args.preview_height, args.jpeg_quality),
@@ -923,6 +983,8 @@ def main():
         print("Interrupted by user")
     finally:
         stop_event.set()
+        if not is_video_file:
+            capture_source.stop()
         inf_thread.join(timeout=2)
         enc_thread.join(timeout=2)
         cap.release()

@@ -31,6 +31,22 @@ Model Zoo 的其它模型（yolov8s/m、yolov5、yolov8-seg 等）。
 
 ### 1. 宿主机准备（首次，一次性）
 
+#### 安装 Docker
+
+在开发板上运行以下命令安装 Docker：
+
+```bash
+# 下载安装脚本
+curl -fsSL https://get.docker.com -o get-docker.sh
+# 使用阿里云镜像源安装
+sudo sh get-docker.sh --mirror Aliyun
+# 启动 Docker 并配置开机自启
+sudo systemctl enable docker
+sudo systemctl start docker
+```
+
+#### 安装 Hailo 工具链
+
 ```bash
 sudo apt update
 sudo apt install hailo-all
@@ -207,6 +223,10 @@ curl -X POST http://<Pi5_IP>:8000/api/config \
 ---
 
 ## 迁移到其它模型
+
+如果要持续从 Hailo Model Zoo 搬模型，推荐先看这份流程文档：
+[docs/HAILO_MODEL_PORTING_zh.md](docs/HAILO_MODEL_PORTING_zh.md)。里面包含
+`.hef` 准备、模板选择、脚手架生成模块、Docker 构建和运行命令。
 
 把 [src/rpi5_hailo8_yolov8/](src/rpi5_hailo8_yolov8/) 当模板：
 

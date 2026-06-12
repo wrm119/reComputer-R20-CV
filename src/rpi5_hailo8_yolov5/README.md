@@ -27,6 +27,20 @@ hailortcli fw-control identify
 ls /dev/hailo0
 ```
 
+### Install Docker
+
+Run the following commands on the development board to install Docker:
+
+```bash
+# Download installation script
+curl -fsSL https://get.docker.com -o get-docker.sh
+# Install using Aliyun mirror source
+sudo sh get-docker.sh --mirror Aliyun
+# Start Docker and enable auto-start on boot
+sudo systemctl enable docker
+sudo systemctl start docker
+```
+
 `hailortcli fw-control identify` should print board info and a firmware version.
 Remember the firmware version — your container's `hailort` wheel **must match it**.
 

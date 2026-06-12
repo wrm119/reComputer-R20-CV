@@ -24,6 +24,20 @@ hailortcli fw-control identify
 ls /dev/hailo0
 ```
 
+### 安装 Docker
+
+在开发板上执行以下命令安装 Docker：
+
+```bash
+# 下载安装脚本
+curl -fsSL https://get.docker.com -o get-docker.sh
+# 使用阿里云镜像源安装
+sudo sh get-docker.sh --mirror Aliyun
+# 启动 Docker，并设置开机自启动
+sudo systemctl enable docker
+sudo systemctl start docker
+```
+
 `hailortcli fw-control identify` 应该打印出板卡信息和固件版本。**记住这个固件版本**
 ——容器里装的 `hailort` wheel 必须和它对得上。
 
